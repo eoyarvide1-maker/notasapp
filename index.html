@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotasApp</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: #f4f5f7;
+      color: #1f2937;
+    }
+
+    /* ========== HEADER ========== */
+    header {
+      background-color: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 40px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    h1 span {
+      color: #4f46e5;
+    }
+
+    .btn-nueva-nota {
+      background-color: #4f46e5;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .btn-nueva-nota:hover {
+      background-color: #3f3ad1;
+      transform: translateY(-2px);
+    }
+
+    .btn-nueva-nota:active {
+      transform: translateY(0);
+    }
+
+    /* ========== MAIN CONTENT ========== */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    section {
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ========== SECCIÓN DE NOTAS ========== */
+    h2 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .descripcion {
+      color: #6c7280;
+      font-size: 16px;
+      margin-bottom: 30px;
+    }
+
+    .contenedor-notas {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    article {
+      background-color: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    article:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    article h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1f2937;
+    }
+
+    article p {
+      color: #6c7280;
+      font-size: 14px;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .categoria-badge {
+      display: inline-block;
+      background-color: #eef2ff;
+      color: #4f46e5;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .nota-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .nota-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .nota-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .btn-editar,
+    .btn-borrar {
+      padding: 8px 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-editar {
+      background-color: #eef2ff;
+      color: #4f46e5;
+    }
+
+    .btn-editar:hover {
+      background-color: #dfe7ff;
+    }
+
+    .btn-borrar {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .btn-borrar:hover {
+      background-color: #fecaca;
+    }
+
+    .nota-vacia {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px 20px;
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      background-color: #fff;
+      color: #6c7280;
+    }
+
+    /* ========== MODAL ========== */
+    dialog {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      padding: 0;
+      max-width: 600px;
+      width: 90%;
+      animation: slideIn 0.3s ease-out;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      margin: 0;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    dialog::backdrop {
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    dialog[open] {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 24px 24px 0 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-header button {
+      align-self: flex-end;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6c7280;
+      transition: color 0.3s ease;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-header button:hover {
+      color: #1f2937;
+    }
+
+    .modal-content {
+      padding: 24px;
+      overflow-y: auto;
+      max-height: 70vh;
+    }
+
+    .modal-header h2 {
+      margin: 0 0 4px 0;
+      font-size: 24px;
+    }
+
+    .modal-header p {
+      color: #6c7280;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    /* ========== FORMULARIO ========== */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .form-grupo {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1f2937;
+    }
+
+    input[type="text"],
+    textarea {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    .categoria-opciones {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .categoria-opciones button {
+      padding: 10px 16px;
+      border: 2px solid #e5e7eb;
+      background-color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .categoria-opciones button:hover {
+      border-color: #4f46e5;
+      background-color: #f0f3ff;
+    }
+
+    .categoria-opciones button.activo {
+      background-color: #4f46e5;
+      color: #fff;
+      border-color: #4f46e5;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 24px;
+      border-top: 1px solid #e5e7eb;
+      background-color: #f9fafb;
+    }
+
+    button[type="button"],
+    button[type="submit"] {
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .btn-cancelar {
+      background-color: #fff;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-cancelar:hover {
+      background-color: #f3f4f6;
+    }
+
+    .btn-guardar {
+      background-color: #4f46e5;
+      color: #fff;
+    }
+
+    .btn-guardar:hover {
+      background-color: #3f3ad1;
+    }
+
+    /* ========== FOOTER ========== */
+    footer {
+      margin-top: 60px;
+      padding: 30px 20px;
+      text-align: center;
+      color: #6c7280;
+      font-size: 14px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 768px) {
+      nav {
+        padding: 16px 20px;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      .contenedor-notas {
+        grid-template-columns: 1fr;
+      }
+
+      dialog {
+        width: 95%;
+      }
+
+      .modal-content {
+        max-height: 60vh;
+      }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+      }
+
+      .modal-footer button {
+        width: 100%;
+      }
+
+      main {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header>
+    <nav>
+      <h1>Notas<span>App</span></h1>
+      <button class="btn-nueva-nota" id="btnNuevanota">+ Nueva nota</button>
+    </nav>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main>
+    <section>
+      <h2>Mis notas</h2>
+      <p class="descripcion">Todo lo que no quiero olvidar en un solo lugar.</p>
+      <div class="contenedor-notas" id="contenedorNotas"></div>
+    </section>
+  </main>
+
+  <!-- MODAL PARA CREAR/EDITAR NOTAS -->
+  <dialog id="modalNota">
+    <div class="modal-header">
+      <button type="button" id="cerrarModal" aria-label="Cerrar modal">×</button>
+      <h2 id="modalTitulo">Nueva nota</h2>
+      <p id="modalDescripcion">Apunta esa idea antes de que se te escape.</p>
+    </div>
+
+    <div class="modal-content">
+      <form id="formularioNota">
+        <!-- Título -->
+        <div class="form-grupo">
+          <label for="inputTitulo">Título</label>
+          <input 
+            type="text" 
+            id="inputTitulo" 
+            placeholder="Ej. Comprar cascos talla M" 
+            required
+          >
+        </div>
+
+        <!-- Categoría -->
+        <div class="form-grupo">
+          <label>Categoría</label>
+          <div class="categoria-opciones" id="categoriasContainer">
+            <button type="button" class="categoria-btn activo" data-categoria="Trabajo">
+              Trabajo
+            </button>
+            <button type="button" class="categoria-btn" data-categoria="Ideas">
+              Ideas
+            </button>
+            <button type="button" class="categoria-btn" data-categoria="Personal">
+              Personal
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenido -->
+        <div class="form-grupo">
+          <label for="inputContenido">Contenido</label>
+          <textarea 
+            id="inputContenido" 
+            placeholder="Escribe aquí tu nota..." 
+            required
+          ></textarea>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancelar" id="btnCancelar">Cancelar</button>
+      <button type="submit" class="btn-guardar" id="btnGuardar" form="formularioNota">
+        Guardar nota
+      </button>
+    </div>
+  </dialog>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Hecho con HTML en clase de Litoral Code 🍫</p>
+  </footer>
+
+  <script>
+    // ========== ELEMENTOS DEL DOM ==========
+    const btnNuevanota = document.getElementById("btnNuevanota");
+    const modalNota = document.getElementById("modalNota");
+    const cerrarModal = document.getElementById("cerrarModal");
+    const btnCancelar = document.getElementById("btnCancelar");
+    const formularioNota = document.getElementById("formularioNota");
+    const btnGuardar = document.getElementById("btnGuardar");
+    const inputTitulo = document.getElementById("inputTitulo");
+    const inputContenido = document.getElementById("inputContenido");
+    const categoriasContainer = document.getElementById("categoriasContainer");
+    const contenedorNotas = document.getElementById("contenedorNotas");
+    const modalTitulo = document.getElementById("modalTitulo");
+    const modalDescripcion = document.getElementById("modalDescripcion");
+
+    // ========== DATOS ==========
+    let notas = [
+      {
+        id: 1,
+        titulo: "Comprar cascos talla M",
+        contenido: "Son los que más se venden. Pedir reposición al proveedor.",
+        categoria: "Trabajo"
+      },
+      {
+        id: 2,
+        titulo: "Grabar episodio del podcast",
+        contenido: "Tema: cómo elegir tu primer casco sin morir en el intento.",
+        categoria: "Ideas"
+      },
+      {
+        id: 3,
+        titulo: "Idea para la clase",
+        contenido: "Apagar el CSS en vivo y que vean los huecos del HTML.",
+        categoria: "Personal"
+      }
+    ];
+
+    let nextId = 4;
+    let editingNoteId = null;
+    let categoriaSeleccionada = "Trabajo";
+
+    // ========== FUNCIONES ==========
+    function abrirModalParaCrear() {
+      editingNoteId = null;
+      modalTitulo.textContent = "Nueva nota";
+      modalDescripcion.textContent = "Apunta esa idea antes de que se te escape.";
+      btnGuardar.textContent = "Guardar nota";
+      formularioNota.reset();
+      categoriaSeleccionada = "Trabajo";
+      actualizarBotonesCategoria();
+      inputTitulo.focus();
+      modalNota.showModal();
+    }
+
+    function abrirModalParaEditar(nota) {
+      editingNoteId = nota.id;
+      modalTitulo.textContent = "Editar nota";
+      modalDescripcion.textContent = "Actualiza los detalles de tu nota.";
+      btnGuardar.textContent = "Actualizar nota";
+      inputTitulo.value = nota.titulo;
+      inputContenido.value = nota.contenido;
+      categoriaSeleccionada = nota.categoria;
+      actualizarBotonesCategoria();
+      inputTitulo.focus();
+      modalNota.showModal();
+    }
+
+    function cerrarModalFunc() {
+      modalNota.close();
+      formularioNota.reset();
+      editingNoteId = null;
+      categoriaSeleccionada = "Trabajo";
+      actualizarBotonesCategoria();
+    }
+
+    function actualizarBotonesCategoria() {
+      const botonesCategoria = document.querySelectorAll(".categoria-btn");
+      botonesCategoria.forEach((btn) => {
+        if (btn.dataset.categoria === categoriaSeleccionada) {
+          btn.classList.add("activo");
+        } else {
+          btn.classList.remove("activo");
+        }
+      });
+    }
+
+    function cambiarCategoria(e) {
+      if (e.target.classList.contains("categoria-btn")) {
+        e.preventDefault();
+        categoriaSeleccionada = e.target.dataset.categoria;
+        actualizarBotonesCategoria();
+      }
+    }
+
+    function guardarNota(e) {
+      e.preventDefault();
+
+      const titulo = inputTitulo.value.trim();
+      const contenido = inputContenido.value.trim();
+
+      if (!titulo || !contenido) {
+        return;
+      }
+
+      if (editingNoteId === null) {
+        // Crear una nota nueva
+        const nuevaNota = {
+          id: nextId,
+          titulo,
+          contenido,
+          categoria: categoriaSeleccionada
+        };
+        notas.push(nuevaNota);
+        nextId += 1;
+      } else {
+        // Editar una nota existente
+        notas = notas.map((nota) => {
+          if (nota.id === editingNoteId) {
+            return {
+              ...nota,
+              titulo,
+              contenido,
+              categoria: categoriaSeleccionada
+            };
+          }
+          return nota;
+        });
+      }
+
+      renderizarNotas();
+      cerrarModalFunc();
+    }
+
+    function borrarNota(id) {
+      const confirmar = confirm("¿Quieres borrar esta nota?");
+
+      if (confirmar) {
+        notas = notas.filter((nota) => nota.id !== id);
+        renderizarNotas();
+      }
+    }
+
+    function renderizarNotas() {
+      if (notas.length === 0) {
+        contenedorNotas.innerHTML = '<div class="nota-vacia">No hay notas todavía. Crea una para empezar.</div>';
+        return;
+      }
+
+      contenedorNotas.innerHTML = "";
+
+      notas.forEach((nota) => {
+        const articulo = document.createElement("article");
+        articulo.className = "nota-card";
+        articulo.innerHTML = `
+          <div class="nota-header">
+            <h3>${nota.titulo}</h3>
+            <span class="categoria-badge">${nota.categoria}</span>
+          </div>
+          <p>${nota.contenido}</p>
+          <div class="nota-actions">
+            <button type="button" class="btn-editar" data-id="${nota.id}">Editar</button>
+            <button type="button" class="btn-borrar" data-id="${nota.id}">Borrar</button>
+          </div>
+        `;
+        contenedorNotas.appendChild(articulo);
+      });
+    }
+
+    // ========== EVENT LISTENERS ==========
+    btnNuevanota.addEventListener("click", abrirModalParaCrear);
+    cerrarModal.addEventListener("click", cerrarModalFunc);
+    btnCancelar.addEventListener("click", cerrarModalFunc);
+    formularioNota.addEventListener("submit", guardarNota);
+    categoriasContainer.addEventListener("click", cambiarCategoria);
+
+    contenedorNotas.addEventListener("click", (e) => {
+      const botonEditar = e.target.closest(".btn-editar");
+      const botonBorrar = e.target.closest(".btn-borrar");
+
+      if (botonEditar) {
+        const id = Number(botonEditar.dataset.id);
+        const nota = notas.find((item) => item.id === id);
+
+        if (nota) {
+          abrirModalParaEditar(nota);
+        }
+      }
+
+      if (botonBorrar) {
+        const id = Number(botonBorrar.dataset.id);
+        borrarNota(id);
+      }
+    });
+
+    // Cerrar modal al hacer click en el backdrop
+    modalNota.addEventListener("click", (e) => {
+      if (e.target === modalNota) {
+        cerrarModalFunc();
+      }
+    });
+
+    // ========== INICIALIZAR ==========
+    renderizarNotas();
+    actualizarBotonesCategoria();
+  </script>
+</body>
+
+</html>
