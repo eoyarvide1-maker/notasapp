@@ -207,6 +207,91 @@
       color: #6c7280;
     }
 
+    .chat-section {
+      margin-top: 40px;
+    }
+
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background-color: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .chat-message {
+      max-width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      line-height: 1.6;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .chat-user {
+      align-self: flex-end;
+      background-color: #eef2ff;
+      color: #1f2937;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-bot {
+      align-self: flex-start;
+      background-color: #f3f4f6;
+      color: #1f2937;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chat-input {
+      flex: 1;
+      min-width: 220px;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background-color: #fff;
+      font-size: 14px;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .chat-enviar {
+      background-color: #4f46e5;
+      color: #fff;
+      border-radius: 999px;
+      padding: 12px 20px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+
+    .chat-enviar:hover {
+      background-color: #3f3ad1;
+    }
+
     /* ========== MODAL ========== */
     dialog {
       border: none;
@@ -464,6 +549,26 @@
       <p class="descripcion">Todo lo que no quiero olvidar en un solo lugar.</p>
       <div class="contenedor-notas" id="contenedorNotas"></div>
     </section>
+
+    <section class="chat-section">
+      <h2>Chat con Groq</h2>
+      <p class="descripcion">Pregunta sobre tus notas y obtén respuesta inteligente del asistente.</p>
+      <div class="chat-panel" id="chatPanel">
+        <div class="chat-messages" id="chatMessages">
+          <div class="nota-vacia">Escribe una pregunta para recibir una respuesta basada en tus notas.</div>
+        </div>
+        <form id="chatForm" class="chat-form">
+          <input
+            type="text"
+            id="chatInput"
+            class="chat-input"
+            placeholder="¿Qué quieres saber sobre tus notas?"
+            required
+          />
+          <button type="submit" class="chat-enviar">Enviar</button>
+        </form>
+      </div>
+    </section>
   </main>
 
   <!-- MODAL PARA CREAR/EDITAR NOTAS -->
@@ -528,6 +633,7 @@
     <p>Hecho con HTML en clase de Litoral Code 🍫</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     // ========== ELEMENTOS DEL DOM ==========
     const btnNuevanota = document.getElementById("btnNuevanota");
@@ -540,36 +646,48 @@
     const inputContenido = document.getElementById("inputContenido");
     const categoriasContainer = document.getElementById("categoriasContainer");
     const contenedorNotas = document.getElementById("contenedorNotas");
+    const chatMessages = document.getElementById("chatMessages");
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
     const modalTitulo = document.getElementById("modalTitulo");
     const modalDescripcion = document.getElementById("modalDescripcion");
 
-    // ========== DATOS ==========
-    let notas = [
-      {
-        id: 1,
-        titulo: "Comprar cascos talla M",
-        contenido: "Son los que más se venden. Pedir reposición al proveedor.",
-        categoria: "Trabajo"
-      },
-      {
-        id: 2,
-        titulo: "Grabar episodio del podcast",
-        contenido: "Tema: cómo elegir tu primer casco sin morir en el intento.",
-        categoria: "Ideas"
-      },
-      {
-        id: 3,
-        titulo: "Idea para la clase",
-        contenido: "Apagar el CSS en vivo y que vean los huecos del HTML.",
-        categoria: "Personal"
-      }
-    ];
+    // ========== SUPABASE ==========
+    const SUPABASE_URL = "https://kurkmhcjvgtwfmuxhqiv.supabase.com";
+    const SUPABASE_KEY = "sb_publishable_eExdZLOPbimSUUzRzTYaXA_LAna4qJF";
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let nextId = 4;
+    // ========== DATOS ==========
+    let notas = [];
     let editingNoteId = null;
     let categoriaSeleccionada = "Trabajo";
 
+    async function cargarNotas() {
+      const { data, error } = await supabaseClient
+        .from("notas")
+        .select("*")
+        .order("creada_en", { ascending: true });
+
+      if (error) {
+        console.error("Error cargando notas:", error.message);
+        notas = [];
+      } else {
+        notas = data ?? [];
+      }
+
+      renderizarNotas();
+    }
+
     // ========== FUNCIONES ==========
+    function escaparTexto(texto) {
+      return String(texto ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function abrirModalParaCrear() {
       editingNoteId = null;
       modalTitulo.textContent = "Nueva nota";
@@ -622,7 +740,7 @@
       }
     }
 
-    function guardarNota(e) {
+    async function guardarNota(e) {
       e.preventDefault();
 
       const titulo = inputTitulo.value.trim();
@@ -633,41 +751,67 @@
       }
 
       if (editingNoteId === null) {
-        // Crear una nota nueva
-        const nuevaNota = {
-          id: nextId,
-          titulo,
-          contenido,
-          categoria: categoriaSeleccionada
-        };
-        notas.push(nuevaNota);
-        nextId += 1;
-      } else {
-        // Editar una nota existente
-        notas = notas.map((nota) => {
-          if (nota.id === editingNoteId) {
-            return {
-              ...nota,
+        const newId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        const { data, error } = await supabaseClient
+          .from("notas")
+          .insert([
+            {
+              id: newId,
               titulo,
               contenido,
-              categoria: categoriaSeleccionada
-            };
-          }
-          return nota;
-        });
+              categoria: categoriaSeleccionada,
+              creada_en: new Date().toISOString(),
+              modificada_en: new Date().toISOString()
+            }
+          ])
+          .single();
+
+        if (error) {
+          console.error("Error guardando nota:", error.message);
+          return;
+        }
+
+        notas.push(data);
+      } else {
+        const { data, error } = await supabaseClient
+          .from("notas")
+          .update({
+            titulo,
+            contenido,
+            categoria: categoriaSeleccionada,
+            modificada_en: new Date().toISOString()
+          })
+          .eq("id", editingNoteId)
+          .single();
+
+        if (error) {
+          console.error("Error actualizando nota:", error.message);
+          return;
+        }
+
+        notas = notas.map((nota) => (nota.id === editingNoteId ? data : nota));
       }
 
       renderizarNotas();
       cerrarModalFunc();
     }
 
-    function borrarNota(id) {
+    async function borrarNota(id) {
       const confirmar = confirm("¿Quieres borrar esta nota?");
 
-      if (confirmar) {
-        notas = notas.filter((nota) => nota.id !== id);
-        renderizarNotas();
+      if (!confirmar) {
+        return;
       }
+
+      const { error } = await supabaseClient.from("notas").delete().eq("id", id);
+
+      if (error) {
+        console.error("Error borrando nota:", error.message);
+        return;
+      }
+
+      notas = notas.filter((nota) => nota.id !== id);
+      renderizarNotas();
     }
 
     function renderizarNotas() {
@@ -683,10 +827,10 @@
         articulo.className = "nota-card";
         articulo.innerHTML = `
           <div class="nota-header">
-            <h3>${nota.titulo}</h3>
-            <span class="categoria-badge">${nota.categoria}</span>
+            <h3>${escaparTexto(nota.titulo)}</h3>
+            <span class="categoria-badge">${escaparTexto(nota.categoria)}</span>
           </div>
-          <p>${nota.contenido}</p>
+          <p>${escaparTexto(nota.contenido)}</p>
           <div class="nota-actions">
             <button type="button" class="btn-editar" data-id="${nota.id}">Editar</button>
             <button type="button" class="btn-borrar" data-id="${nota.id}">Borrar</button>
@@ -694,6 +838,71 @@
         `;
         contenedorNotas.appendChild(articulo);
       });
+    }
+
+    function appendChatMessage(role, texto) {
+      const placeholder = chatMessages.querySelector(".nota-vacia");
+      if (placeholder) {
+        chatMessages.removeChild(placeholder);
+      }
+
+      const mensaje = document.createElement("div");
+      mensaje.className = `chat-message ${role === "user" ? "chat-user" : "chat-bot"}`;
+      mensaje.textContent = texto;
+      chatMessages.appendChild(mensaje);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function enviarPreguntaChat(event) {
+      event.preventDefault();
+
+      const pregunta = chatInput.value.trim();
+      if (!pregunta) {
+        return;
+      }
+
+      appendChatMessage("user", pregunta);
+      chatInput.value = "";
+      appendChatMessage("bot", "Pensando en la respuesta...\nPor favor espera.");
+
+      const notasPayload = notas.map((nota) => ({
+        titulo: nota.titulo,
+        contenido: nota.contenido,
+        categoria: nota.categoria,
+      }));
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: pregunta,
+            notes: notasPayload,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.error || "Error al consultar Groq");
+        }
+
+        const messageText = data.answer || "No obtuve una respuesta válida.";
+        const lastBotMessage = chatMessages.querySelector(".chat-bot:last-child");
+        if (lastBotMessage) {
+          lastBotMessage.textContent = messageText;
+        } else {
+          appendChatMessage("bot", messageText);
+        }
+      } catch (error) {
+        const lastBotMessage = chatMessages.querySelector(".chat-bot:last-child");
+        if (lastBotMessage) {
+          lastBotMessage.textContent = `Error: ${error.message}`;
+        } else {
+          appendChatMessage("bot", `Error: ${error.message}`);
+        }
+      }
     }
 
     // ========== EVENT LISTENERS ==========
@@ -708,8 +917,8 @@
       const botonBorrar = e.target.closest(".btn-borrar");
 
       if (botonEditar) {
-        const id = Number(botonEditar.dataset.id);
-        const nota = notas.find((item) => item.id === id);
+        const id = botonEditar.dataset.id;
+        const nota = notas.find((item) => String(item.id) === String(id));
 
         if (nota) {
           abrirModalParaEditar(nota);
@@ -717,10 +926,12 @@
       }
 
       if (botonBorrar) {
-        const id = Number(botonBorrar.dataset.id);
+        const id = botonBorrar.dataset.id;
         borrarNota(id);
       }
     });
+
+    chatForm.addEventListener("submit", enviarPreguntaChat);
 
     // Cerrar modal al hacer click en el backdrop
     modalNota.addEventListener("click", (e) => {
@@ -730,7 +941,7 @@
     });
 
     // ========== INICIALIZAR ==========
-    renderizarNotas();
+    cargarNotas();
     actualizarBotonesCategoria();
   </script>
 </body>
