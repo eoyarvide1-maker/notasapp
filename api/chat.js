@@ -25,16 +25,17 @@ export default async function handler(req, res) {
       .join("\n")}
 \nPregunta: ${question}`;
 
-    const response = await fetch("https://api.groq.com/v1/predict", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "groq-1",
-        prompt,
-        max_output_tokens: 300,
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 300,
+        temperature: 0.7,
       }),
     });
 
@@ -44,7 +45,7 @@ export default async function handler(req, res) {
     }
 
     const result = await response.json();
-    const answer = result?.output?.[0]?.content?.[0] || result?.output_text || "No se pudo procesar la respuesta.";
+    const answer = result?.choices?.[0]?.message?.content || result?.output?.[0]?.content?.[0] || result?.output_text || "No se pudo procesar la respuesta.";
 
     return res.status(200).json({ answer });
   } catch (error) {
