@@ -538,12 +538,16 @@
   <header>
     <nav>
       <h1>Notas<span>App</span></h1>
-      <button class="btn-nueva-nota" id="btnNuevanota">+ Nueva nota</button>
+      <div id="navAuth" style="display: flex; gap: 16px; align-items: center;">
+        <button class="btn-nueva-nota" id="btnNuevanota" style="display: none;">+ Nueva nota</button>
+        <span id="userEmail" style="font-size: 14px; color: #6c7280; display: none;"></span>
+        <button class="btn-nueva-nota" id="btnCerrarSesion" style="display: none; background-color: #ef4444; padding: 10px 16px;">Cerrar sesión</button>
+      </div>
     </nav>
   </header>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main>
+  <main id="mainContent" style="display: none;">
     <section>
       <h2>Mis notas</h2>
       <p class="descripcion">Todo lo que no quiero olvidar en un solo lugar.</p>
@@ -570,6 +574,52 @@
       </div>
     </section>
   </main>
+
+  </dialog>
+
+  <!-- MODAL DE AUTENTICACIÓN -->
+  <dialog id="modalAuth">
+    <div class="modal-header">
+      <h2 id="modalAuthTitulo">Iniciar sesión</h2>
+      <p id="modalAuthDescripcion">Accede a tu cuaderno de notas con tu email y contraseña.</p>
+    </div>
+
+    <div class="modal-content">
+      <form id="formularioAuth">
+        <!-- Email -->
+        <div class="form-grupo">
+          <label for="inputEmail">Email</label>
+          <input 
+            type="email" 
+            id="inputEmail" 
+            placeholder="tu@email.com" 
+            required
+          >
+        </div>
+
+        <!-- Contraseña -->
+        <div class="form-grupo">
+          <label for="inputPassword">Contraseña</label>
+          <input 
+            type="password" 
+            id="inputPassword" 
+            placeholder="Mínimo 6 caracteres" 
+            required
+            minlength="6"
+          >
+        </div>
+
+        <div id="authError" style="color: #b91c1c; font-size: 14px; display: none; margin-bottom: 16px; white-space: pre-wrap; word-break: break-word;"></div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancelar" id="btnToggleAuth">¿No tienes cuenta? Regístrate</button>
+      <button type="submit" class="btn-guardar" id="btnAuthSubmit" form="formularioAuth">
+        Iniciar sesión
+      </button>
+    </div>
+  </dialog>
 
   <!-- MODAL PARA CREAR/EDITAR NOTAS -->
   <dialog id="modalNota">
@@ -633,9 +683,88 @@
     <p>Hecho con HTML en clase de Litoral Code 🍫</p>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
+    const SUPABASE_URL = "https://kurkmhcjvgtwfmuxhqiv.supabase.com";
+    const SUPABASE_KEY = "sb_publishable_eExdZLOPbimSUUzRzTYaXA_LAna4qJF";
+    
+    // Verificar conectividad
+    async function verificarConectividad() {
+      try {
+        const response = await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    // Diagnosticar Supabase
+    async function diagnosticarSupabase() {
+      console.log("=== DIAGNÓSTICO SUPABASE ===");
+      console.log("URL:", SUPABASE_URL);
+      console.log("Key:", SUPABASE_KEY ? SUPABASE_KEY.substring(0, 20) + "..." : "NO CONFIGURADA");
+      
+      // Verificar Internet
+      const tieneInternet = await verificarConectividad();
+      console.log("Conexión a Internet:", tieneInternet ? "✓ OK" : "✗ FALLÓ");
+      
+      // Verificar Supabase en window
+      console.log("window.supabase disponible:", !!window.supabase);
+      
+      // Intentar conectarse a Supabase
+      try {
+        const response = await fetch(SUPABASE_URL, { mode: 'no-cors' });
+        console.log("Conexión a Supabase:", "✓ Dominio alcanzable");
+      } catch (error) {
+        console.error("Error conectando a Supabase:", error.message);
+      }
+      
+      // Verificar cliente
+      const client = getSupabaseClient();
+      console.log("Cliente Supabase:", client ? "✓ Creado" : "✗ NO CREADO");
+    }
+
+    // Ejecutar diagnóstico al cargar
+    window.addEventListener('load', () => {
+      console.log("App cargada. Escribe: diagnosticarSupabase() en la consola para más info.");
+      window.diagnosticarSupabase = diagnosticarSupabase;
+    });
+
+    // Función helper para obtener cliente de Supabase
+    function getSupabaseClient() {
+      if (window.supabase?.createClient && !window.__supabaseClient) {
+        try {
+          window.__supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          console.log("✓ Supabase inicializado");
+        } catch (error) {
+          console.error("✗ Error inicializando Supabase:", error);
+        }
+      }
+      return window.__supabaseClient || null;
+    }
+
+    // Helper para verificar si Supabase está disponible
+    function isSupabaseAvailable() {
+      return !!getSupabaseClient();
+    }
+
+    // Inicializar al cargar
+    getSupabaseClient();
+
     // ========== ELEMENTOS DEL DOM ==========
+    const mainContent = document.getElementById("mainContent");
+    const modalAuth = document.getElementById("modalAuth");
+    const formularioAuth = document.getElementById("formularioAuth");
+    const inputEmail = document.getElementById("inputEmail");
+    const inputPassword = document.getElementById("inputPassword");
+    const btnAuthSubmit = document.getElementById("btnAuthSubmit");
+    const btnToggleAuth = document.getElementById("btnToggleAuth");
+    const authError = document.getElementById("authError");
+    const modalAuthTitulo = document.getElementById("modalAuthTitulo");
+    const modalAuthDescripcion = document.getElementById("modalAuthDescripcion");
+    const navAuth = document.getElementById("navAuth");
+    const userEmail = document.getElementById("userEmail");
+    const btnCerrarSesion = document.getElementById("btnCerrarSesion");
     const btnNuevanota = document.getElementById("btnNuevanota");
     const modalNota = document.getElementById("modalNota");
     const cerrarModal = document.getElementById("cerrarModal");
@@ -652,39 +781,227 @@
     const modalTitulo = document.getElementById("modalTitulo");
     const modalDescripcion = document.getElementById("modalDescripcion");
 
-    // ========== SUPABASE ==========
-    const SUPABASE_URL = "https://kurkmhcjvgtwfmuxhqiv.supabase.com";
-    const SUPABASE_KEY = "sb_publishable_eExdZLOPbimSUUzRzTYaXA_LAna4qJF";
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // ========== DATOS ==========
     let notas = [];
     let editingNoteId = null;
     let categoriaSeleccionada = "Trabajo";
+    let esRegistro = false;
+    let currentUser = null;
 
-    async function cargarNotas() {
-      const { data, error } = await supabaseClient
-        .from("notas")
-        .select("*")
-        .order("creada_en", { ascending: true });
+    // ========== AUTENTICACIÓN ==========
+    async function verificarSesion() {
+      const client = getSupabaseClient();
+      if (!client) {
+        console.log("Supabase no disponible, mostrando login");
+        mostrarAutenticacion();
+        return;
+      }
+      
+      try {
+        const { data: { user } } = await client.auth.getUser();
+        
+        if (user) {
+          currentUser = user;
+          mostrarContenidoPrincipal();
+        } else {
+          mostrarAutenticacion();
+        }
+      } catch (error) {
+        console.error("Error verificando sesión:", error);
+        mostrarAutenticacion();
+      }
+    }
 
-      if (error) {
-        console.error("Error cargando notas:", error.message);
-        notas = [];
+    function mostrarAutenticacion() {
+      mainContent.style.display = "none";
+      modalAuth.showModal();
+      btnNuevanota.style.display = "none";
+      userEmail.style.display = "none";
+      btnCerrarSesion.style.display = "none";
+      esRegistro = false;
+      formularioAuth.reset();
+      authError.style.display = "none";
+      actualizarTextoAuth();
+    }
+
+    function mostrarContenidoPrincipal() {
+      mainContent.style.display = "block";
+      modalAuth.close();
+      btnNuevanota.style.display = "block";
+      userEmail.style.display = "block";
+      btnCerrarSesion.style.display = "block";
+      userEmail.textContent = currentUser?.email || "";
+      cargarNotas();
+    }
+
+    function actualizarTextoAuth() {
+      if (esRegistro) {
+        modalAuthTitulo.textContent = "Crear cuenta";
+        modalAuthDescripcion.textContent = "Regístrate para crear tu cuaderno de notas.";
+        btnAuthSubmit.textContent = "Registrarse";
+        btnToggleAuth.textContent = "¿Ya tienes cuenta? Inicia sesión";
       } else {
-        notas = data ?? [];
+        modalAuthTitulo.textContent = "Iniciar sesión";
+        modalAuthDescripcion.textContent = "Accede a tu cuaderno de notas con tu email y contraseña.";
+        btnAuthSubmit.textContent = "Iniciar sesión";
+        btnToggleAuth.textContent = "¿No tienes cuenta? Regístrate";
+      }
+    }
+
+    async function handleAuth(e) {
+      e.preventDefault();
+      const client = getSupabaseClient();
+      if (!client) {
+        authError.textContent = "Supabase no está disponible. Verifica tu conexión a internet.";
+        authError.style.display = "block";
+        return;
       }
 
+      const email = inputEmail.value.trim();
+      const password = inputPassword.value;
+
+      if (!email || !password) {
+        authError.textContent = "Por favor completa todos los campos";
+        authError.style.display = "block";
+        return;
+      }
+
+      authError.style.display = "none";
+      btnAuthSubmit.disabled = true;
+      btnAuthSubmit.textContent = esRegistro ? "Registrando..." : "Iniciando sesión...";
+
+      try {
+        // Verificar conectividad primero
+        const tieneConexion = await verificarConectividad();
+        if (!tieneConexion) {
+          throw new Error("No hay conexión a internet. Por favor verifica tu red.");
+        }
+
+        if (esRegistro) {
+          // Registro
+          const { data, error } = await client.auth.signUp({
+            email,
+            password,
+          });
+
+          if (error) {
+            throw new Error(error.message);
+          }
+
+          if (data?.user) {
+            currentUser = data.user;
+            mostrarContenidoPrincipal();
+          }
+        } else {
+          // Login
+          const { data, error } = await client.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (error) {
+            throw new Error(error.message);
+          }
+
+          if (data?.user) {
+            currentUser = data.user;
+            mostrarContenidoPrincipal();
+          }
+        }
+      } catch (error) {
+        console.error("Error en autenticación:", error);
+        
+        // Mensajes de error mejorados
+        let mensajeError = error.message || "Error en la autenticación";
+        
+        if (mensajeError.includes("ERR_NAME_NOT_RESOLVED") || mensajeError.includes("Failed to fetch")) {
+          mensajeError = "🔗 No se puede conectar a Supabase. Causas posibles:\n" +
+                        "1. Sin conexión a internet\n" +
+                        "2. URL de Supabase incorrecta\n" +
+                        "3. Firewall/proxy bloqueando\n\n" +
+                        "Verifica tu Dashboard de Supabase → Settings → API";
+        } else if (mensajeError.includes("Invalid login credentials")) {
+          mensajeError = "❌ Email o contraseña incorrectos";
+        } else if (mensajeError.includes("User already registered")) {
+          mensajeError = "ℹ️ Este email ya está registrado. Intenta iniciar sesión.";
+        }
+        
+        authError.textContent = mensajeError;
+        authError.style.display = "block";
+      } finally {
+        btnAuthSubmit.disabled = false;
+        btnAuthSubmit.textContent = esRegistro ? "Registrarse" : "Iniciar sesión";
+      }
+    }
+
+    function toggleRegistroLogin() {
+      esRegistro = !esRegistro;
+      formularioAuth.reset();
+      authError.style.display = "none";
+      actualizarTextoAuth();
+    }
+
+    async function cerrarSesion() {
+      const client = getSupabaseClient();
+      if (!client) return;
+
+      try {
+        const { error } = await client.auth.signOut();
+        if (error) {
+          console.error("Error al cerrar sesión:", error.message);
+        } else {
+          currentUser = null;
+          notas = [];
+          mostrarAutenticacion();
+        }
+      } catch (error) {
+        console.error("Error cerrando sesión:", error);
+        currentUser = null;
+        notas = [];
+        mostrarAutenticacion();
+      }
+    }
+
+    // ========== NOTAS ==========
+    function obtenerCategoria(nota) {
+      return nota?.categoria || "Trabajo";
+    }
+
+    async function cargarNotas() {
+      const client = getSupabaseClient();
+      if (!client || !currentUser) {
+        notas = [];
+        renderizarNotas();
+        return;
+      }
+
+      try {
+        const { data, error } = await client
+          .from("notas")
+          .select("*")
+          .order("creada_en", { ascending: false });
+        
+        if (error) {
+          console.error("Error cargando notas:", error.message);
+          notas = [];
+        } else {
+          notas = (data ?? []).map((nota) => ({
+            ...nota,
+            categoria: obtenerCategoria(nota),
+          }));
+        }
+      } catch (error) {
+        console.error("Error en cargarNotas:", error);
+        notas = [];
+      }
       renderizarNotas();
     }
 
-    // ========== FUNCIONES ==========
     function escaparTexto(texto) {
       return String(texto ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
+        .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
     }
 
@@ -707,7 +1024,7 @@
       btnGuardar.textContent = "Actualizar nota";
       inputTitulo.value = nota.titulo;
       inputContenido.value = nota.contenido;
-      categoriaSeleccionada = nota.categoria;
+      categoriaSeleccionada = obtenerCategoria(nota);
       actualizarBotonesCategoria();
       inputTitulo.focus();
       modalNota.showModal();
@@ -742,6 +1059,11 @@
 
     async function guardarNota(e) {
       e.preventDefault();
+      const client = getSupabaseClient();
+      if (!client || !currentUser) {
+        alert("No se puede guardar la nota: Debes estar autenticado.");
+        return;
+      }
 
       const titulo = inputTitulo.value.trim();
       const contenido = inputContenido.value.trim();
@@ -750,68 +1072,84 @@
         return;
       }
 
-      if (editingNoteId === null) {
-        const newId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        const { data, error } = await supabaseClient
-          .from("notas")
-          .insert([
-            {
-              id: newId,
+      try {
+        if (editingNoteId === null) {
+          const newId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          const { data, error } = await client
+            .from("notas")
+            .insert([
+              {
+                id: newId,
+                titulo,
+                contenido,
+                categoria: categoriaSeleccionada,
+                user_id: currentUser.id,
+                creada_en: new Date().toISOString(),
+                modificada_en: new Date().toISOString(),
+              }
+            ])
+            .select()
+            .single();
+
+          if (error) {
+            console.error("Error guardando nota:", error.message);
+            return;
+          }
+
+          notas.unshift(data);
+        } else {
+          const { data, error } = await client
+            .from("notas")
+            .update({
               titulo,
               contenido,
               categoria: categoriaSeleccionada,
-              creada_en: new Date().toISOString(),
-              modificada_en: new Date().toISOString()
-            }
-          ])
-          .single();
+              modificada_en: new Date().toISOString(),
+            })
+            .eq("id", editingNoteId)
+            .select()
+            .single();
 
-        if (error) {
-          console.error("Error guardando nota:", error.message);
-          return;
+          if (error) {
+            console.error("Error actualizando nota:", error.message);
+            return;
+          }
+
+          notas = notas.map((nota) => (nota.id === editingNoteId ? data : nota));
         }
 
-        notas.push(data);
-      } else {
-        const { data, error } = await supabaseClient
-          .from("notas")
-          .update({
-            titulo,
-            contenido,
-            categoria: categoriaSeleccionada,
-            modificada_en: new Date().toISOString()
-          })
-          .eq("id", editingNoteId)
-          .single();
-
-        if (error) {
-          console.error("Error actualizando nota:", error.message);
-          return;
-        }
-
-        notas = notas.map((nota) => (nota.id === editingNoteId ? data : nota));
+        renderizarNotas();
+        cerrarModalFunc();
+      } catch (error) {
+        console.error("Error en guardarNota:", error);
       }
-
-      renderizarNotas();
-      cerrarModalFunc();
     }
 
     async function borrarNota(id) {
       const confirmar = confirm("¿Quieres borrar esta nota?");
-
       if (!confirmar) {
         return;
       }
 
-      const { error } = await supabaseClient.from("notas").delete().eq("id", id);
-
-      if (error) {
-        console.error("Error borrando nota:", error.message);
+      const client = getSupabaseClient();
+      if (!client) {
+        alert("No se puede borrar la nota: Supabase no está disponible.");
         return;
       }
 
-      notas = notas.filter((nota) => nota.id !== id);
-      renderizarNotas();
+      try {
+        const { error } = await client.from("notas").delete().eq("id", id);
+
+        if (error) {
+          console.error("Error borrando nota:", error.message);
+          return;
+        }
+
+        notas = notas.filter((nota) => nota.id !== id);
+        renderizarNotas();
+      } catch (error) {
+        console.error("Error en borrarNota:", error);
+      }
     }
 
     function renderizarNotas() {
@@ -821,14 +1159,13 @@
       }
 
       contenedorNotas.innerHTML = "";
-
       notas.forEach((nota) => {
         const articulo = document.createElement("article");
         articulo.className = "nota-card";
         articulo.innerHTML = `
           <div class="nota-header">
             <h3>${escaparTexto(nota.titulo)}</h3>
-            <span class="categoria-badge">${escaparTexto(nota.categoria)}</span>
+            <span class="categoria-badge">${escaparTexto(obtenerCategoria(nota))}</span>
           </div>
           <p>${escaparTexto(nota.contenido)}</p>
           <div class="nota-actions">
@@ -855,8 +1192,8 @@
 
     async function enviarPreguntaChat(event) {
       event.preventDefault();
-
       const pregunta = chatInput.value.trim();
+
       if (!pregunta) {
         return;
       }
@@ -868,7 +1205,7 @@
       const notasPayload = notas.map((nota) => ({
         titulo: nota.titulo,
         contenido: nota.contenido,
-        categoria: nota.categoria,
+        categoria: obtenerCategoria(nota),
       }));
 
       try {
@@ -884,66 +1221,73 @@
         });
 
         const data = await response.json();
+
         if (!response.ok) {
-          throw new Error(data?.error || "Error al consultar Groq");
+          throw new Error(data?.error || `Error HTTP: ${response.status}`);
         }
 
         const messageText = data.answer || "No obtuve una respuesta válida.";
         const lastBotMessage = chatMessages.querySelector(".chat-bot:last-child");
+
         if (lastBotMessage) {
           lastBotMessage.textContent = messageText;
         } else {
           appendChatMessage("bot", messageText);
         }
       } catch (error) {
+        console.error("Error en chat:", error);
         const lastBotMessage = chatMessages.querySelector(".chat-bot:last-child");
+        const errorMsg = error.message.includes("Failed to fetch") 
+          ? "Error: No se puede conectar al servidor. ¿Estás usando un servidor local?" 
+          : `Error: ${error.message}`;
+
         if (lastBotMessage) {
-          lastBotMessage.textContent = `Error: ${error.message}`;
+          lastBotMessage.textContent = errorMsg;
         } else {
-          appendChatMessage("bot", `Error: ${error.message}`);
+          appendChatMessage("bot", errorMsg);
         }
       }
     }
 
     // ========== EVENT LISTENERS ==========
+    formularioAuth.addEventListener("submit", handleAuth);
+    btnToggleAuth.addEventListener("click", toggleRegistroLogin);
+    btnCerrarSesion.addEventListener("click", cerrarSesion);
     btnNuevanota.addEventListener("click", abrirModalParaCrear);
     cerrarModal.addEventListener("click", cerrarModalFunc);
     btnCancelar.addEventListener("click", cerrarModalFunc);
     formularioNota.addEventListener("submit", guardarNota);
     categoriasContainer.addEventListener("click", cambiarCategoria);
-
     contenedorNotas.addEventListener("click", (e) => {
       const botonEditar = e.target.closest(".btn-editar");
       const botonBorrar = e.target.closest(".btn-borrar");
 
       if (botonEditar) {
-        const id = botonEditar.dataset.id;
-        const nota = notas.find((item) => String(item.id) === String(id));
-
+        const dataId = botonEditar.dataset.id;
+        const nota = notas.find((item) => String(item.id) === String(dataId));
         if (nota) {
           abrirModalParaEditar(nota);
         }
       }
 
       if (botonBorrar) {
-        const id = botonBorrar.dataset.id;
-        borrarNota(id);
+        const dataId = botonBorrar.dataset.id;
+        borrarNota(dataId);
       }
     });
 
     chatForm.addEventListener("submit", enviarPreguntaChat);
-
-    // Cerrar modal al hacer click en el backdrop
     modalNota.addEventListener("click", (e) => {
       if (e.target === modalNota) {
         cerrarModalFunc();
       }
     });
 
-    // ========== INICIALIZAR ==========
-    cargarNotas();
+    // ========== INICIALIZACIÓN ==========
+    verificarSesion();
     actualizarBotonesCategoria();
   </script>
+  
 </body>
 
 </html>
